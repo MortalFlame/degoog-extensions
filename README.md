@@ -69,24 +69,63 @@ and nothing secret should ever be committed to this repository.
 
 ---
 
-## Adding screenshots and per-item author details
+## Screenshots
 
-Neither is required, but both make the Store card look right.
+Every item folder has a `screenshots/1-card.png`. These are **generated brand cards, not
+screenshots** — a real capture has to come from a running DeGoog instance. The cards deliberately
+contain no real paper titles, DOIs, authors or citation counts, because inventing them on a public
+page about scholarly search would be genuinely harmful. Five of them composite the vendor's official
+logo; the other six use generated abstract geometry.
 
-**Screenshots.** Create `screenshots/` inside an item folder and drop in `.png`, `.jpg`, `.jpeg`,
-`.gif` or `.webp` files. The **first file alphabetically** becomes the card thumbnail; the rest show in
-the lightbox. SVG is filtered out by the loader, so use a raster image.
+### What the loader accepts
 
+From `src/server/extensions/store/item-files.ts`:
+
+```js
+files.filter((f) => /\.(png|jpg|jpeg|gif|webp)$/i.test(f)).sort()
 ```
-engines/serpstack/
-├── index.js
-└── screenshots/
-    ├── 1-results.png        ← card thumbnail (sorts first)
-    └── 2-configure.png
+
+**png, jpg, jpeg, gif, webp**, case-insensitive. **SVG is silently ignored.**
+
+### Ordering — zero-pad filenames
+
+The list is `.sort()`ed lexicographically and `item.screenshots[0]` becomes the card thumbnail
+(`src/client/settings/store/render/item-card.tsx`). Everything else goes in the lightbox. Always
+zero-pad: unpadded, `10-results.png` sorts *before* `2-configure.png` and silently becomes the
+thumbnail.
+
+### Specs for a real capture
+
+| Use | Size |
+|---|---|
+| Card thumbnail | 1200 x 750 (16:10, what the generated cards use) |
+| Full screenshot | 1440 x 900 or wider |
+
+PNG preferred; keep each under ~400 KB. Show a real query's results with the engine tag visible.
+
+### Regenerating the cards
+
+```bash
+python3 make-screenshots.py --brand-dir brand
 ```
 
-**Per-item author.** `author.json` inside an item folder overrides the repo-wide `author` for that
-item, and is where you add an avatar:
+The script has no third-party dependencies — it decodes and encodes PNG by hand and draws text with
+a built-in 5x7 bitmap font, so it runs anywhere Python 3 does.
+
+**No third-party images are bundled or used.** Every card is generated from scratch, so there is no
+licence to honour and no attribution to publish. Engine cards get neutral result-row geometry;
+transport cards get a stylised page being fetched. Neither contains legible text, so nothing can be
+mistaken for a real citation.
+
+If you later obtain a logo you are entitled to use, put it in the folder named by `--brand-dir`,
+named after the item key (`firecrawl.png`, `openalex.png`, …) and re-run — it will be composited
+onto the card, with a light or dark backing tile chosen from the logo's own luminance. Items with no
+logo fall back to the generated art automatically.
+
+### Per-item author
+
+`author.json` inside an item folder overrides the repo-wide `author` for that item, and is where an
+avatar goes:
 
 ```json
 {
@@ -96,8 +135,14 @@ item, and is where you add an avatar:
 }
 ```
 
-**Repo logo.** Drop a `logo.png` in the repo root and add `"repo-image": "logo.png"` to
-`package.json`. It shows next to the repository in Settings → Store.
+### Repo logo
+
+Drop a `logo.png` in the repo root and add `"repo-image": "logo.png"` to `package.json`. It shows next
+to the repository in Settings -> Store.
+
+> Note: `author.json` and `screenshots/` are **stripped when an item is installed**
+> (`STORE_METADATA` in `item-files.ts`). That is expected — the Store reads them from the repo, and
+> the installed copy stays small.
 
 ---
 
