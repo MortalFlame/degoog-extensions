@@ -49,7 +49,17 @@ export default class SerpstackEngine {
   region = "UAE";
   safeSearch = false;
 
+  _apiKey = "";
   settingsSchema = [
+    {
+      key: "apiKey",
+      label: "API Key",
+      type: "password",
+      secret: true,
+      placeholder: "SERPSTACK_API_KEY",
+      description:
+        "Leave empty to use the SERPSTACK_API_KEY environment variable.",
+    },
     {
       key: "region",
       label: "Region",
@@ -68,6 +78,7 @@ export default class SerpstackEngine {
   ];
 
   configure(settings = {}) {
+    this._apiKey = (settings.apiKey || "").trim();
     if (
       typeof settings.region === "string" &&
       REGIONS[settings.region]
@@ -92,7 +103,7 @@ export default class SerpstackEngine {
 
   async executeSearch(query, page = 1, timeFilter, context) {
     const apiKey =
-      process.env.SERPSTACK_API_KEY?.trim() || "";
+      (this._apiKey || process.env.SERPSTACK_API_KEY?.trim() || "");
     if (!apiKey) {
       throw this._error(
         context,

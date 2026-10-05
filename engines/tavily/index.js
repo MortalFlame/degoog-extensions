@@ -8,7 +8,17 @@ export default class TavilyEngine {
 
   searchDepth = "basic";
 
+  _apiKey = "";
   settingsSchema = [
+    {
+      key: "apiKey",
+      label: "API Key",
+      type: "password",
+      secret: true,
+      placeholder: "TAVILY_API_KEY",
+      description:
+        "Leave empty to use the TAVILY_API_KEY environment variable.",
+    },
     {
       key: "searchDepth",
       label: "Search Depth",
@@ -21,6 +31,7 @@ export default class TavilyEngine {
   ];
 
   configure(settings = {}) {
+    this._apiKey = (settings.apiKey || "").trim();
     this.searchDepth =
       settings.searchDepth === "advanced"
         ? "advanced"
@@ -125,7 +136,7 @@ export default class TavilyEngine {
     }
 
     const apiKey =
-      process.env.TAVILY_API_KEY?.trim() || "";
+      (this._apiKey || process.env.TAVILY_API_KEY?.trim() || "");
 
     if (!apiKey) {
       throw this._error(

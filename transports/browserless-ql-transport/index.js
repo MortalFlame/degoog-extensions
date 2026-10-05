@@ -102,7 +102,17 @@ export default class BrowserlessBQLTransport {
   description =
     "Fetches pages through Browserless Stealth BrowserQL and returns rendered HTML.";
 
+  _token = "";
   settingsSchema = [
+    {
+      key: "token",
+      label: "API Token",
+      type: "password",
+      secret: true,
+      placeholder: "BROWSERLESS_TOKEN",
+      description:
+        "Leave empty to use the BROWSERLESS_TOKEN environment variable.",
+    },
     {
       key: "url",
       label: "Browserless URL",
@@ -206,6 +216,7 @@ export default class BrowserlessBQLTransport {
   _waitAfterSolveMs = 5000;
 
   configure(settings = {}) {
+    this._token = (settings.token || "").trim();
     const rawUrl = (settings.url || "").replace(/\/+$/, "").trim();
     if (rawUrl) {
       try {
@@ -246,7 +257,7 @@ export default class BrowserlessBQLTransport {
   }
 
   available() {
-    const token = process.env.BROWSERLESS_TOKEN?.trim() || "";
+    const token = (this._token || process.env.BROWSERLESS_TOKEN?.trim() || "");
     return this._url.length > 0 && token.length > 0;
   }
 
@@ -259,7 +270,7 @@ export default class BrowserlessBQLTransport {
       console.error(`[browserless-ql] blocked unsafe endpoint: ${error.message}`);
       return new Response("", { status: 400 });
     }
-    const token = process.env.BROWSERLESS_TOKEN?.trim() || "";
+    const token = (this._token || process.env.BROWSERLESS_TOKEN?.trim() || "");
     if (token) endpoint.searchParams.set("token", token);
 
     endpoint.searchParams.set("timeout", String(this._timeoutMs));
@@ -315,7 +326,7 @@ mutation DegoogFetch {
 
   async fetch(url, options, context) {
     if (!this._url) return new Response("Browserless URL not configured", { status: 503 });
-    const token = process.env.BROWSERLESS_TOKEN?.trim() || "";
+    const token = (this._token || process.env.BROWSERLESS_TOKEN?.trim() || "");
     if (!token) return new Response("BROWSERLESS_TOKEN not configured", { status: 401 });
 
     const endpoint = this._buildEndpoint();

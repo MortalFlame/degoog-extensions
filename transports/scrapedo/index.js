@@ -30,7 +30,17 @@ export default class ScrapeDoTransport {
   description =
     "Fetches pages through Scrape.do using a datacenter proxy, headless browser, residential/mobile proxy, or both.";
 
+  _token = "";
   settingsSchema = [
+    {
+      key: "token",
+      label: "API Token",
+      type: "password",
+      secret: true,
+      placeholder: "SCRAPE_DO_TOKEN",
+      description:
+        "Leave empty to use the SCRAPE_DO_TOKEN environment variable.",
+    },
     {
       key: "mode",
       label: "Mode",
@@ -64,6 +74,7 @@ export default class ScrapeDoTransport {
   _timeoutMs = 60000;
 
   configure(settings = {}) {
+    this._token = (settings.token || "").trim();
     const validModes = ["normal", "render", "super", "super_render"];
     this._mode = validModes.includes(settings.mode)
       ? settings.mode
@@ -85,12 +96,12 @@ export default class ScrapeDoTransport {
   }
 
   available() {
-    const token = process.env.SCRAPE_DO_TOKEN?.trim() || "";
+    const token = (this._token || process.env.SCRAPE_DO_TOKEN?.trim() || "");
     return token.length > 0;
   }
 
   _buildEndpoint(url) {
-    const token = process.env.SCRAPE_DO_TOKEN?.trim() || "";
+    const token = (this._token || process.env.SCRAPE_DO_TOKEN?.trim() || "");
     const endpoint = new URL("https://api.scrape.do/");
 
     endpoint.searchParams.set("token", token);
@@ -113,7 +124,7 @@ export default class ScrapeDoTransport {
   }
 
   async fetch(url, options, context) {
-    const token = process.env.SCRAPE_DO_TOKEN?.trim() || "";
+    const token = (this._token || process.env.SCRAPE_DO_TOKEN?.trim() || "");
     if (!token) {
       return new Response("SCRAPE_DO_TOKEN not configured", { status: 401 });
     }

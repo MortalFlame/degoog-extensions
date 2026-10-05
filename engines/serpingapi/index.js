@@ -24,7 +24,17 @@ export default class SerpingApiEngine {
 
   gl = "ae";
 
+  _apiKey = "";
   settingsSchema = [
+    {
+      key: "apiKey",
+      label: "API Key",
+      type: "password",
+      secret: true,
+      placeholder: "SERPING_API_KEY",
+      description:
+        "Leave empty to use the SERPING_API_KEY environment variable.",
+    },
     {
       key: "region",
       label: "Region",
@@ -36,6 +46,7 @@ export default class SerpingApiEngine {
   ];
 
   configure(settings = {}) {
+    this._apiKey = (settings.apiKey || "").trim();
     const region = settings.region || "UAE";
     this.gl = REGION_GL_MAP[region] || "ae";
   }
@@ -53,7 +64,7 @@ export default class SerpingApiEngine {
 
   async _request(url, options = {}, context) {
     const apiKey =
-      process.env.SERPING_API_KEY?.trim() || "";
+      (this._apiKey || process.env.SERPING_API_KEY?.trim() || "");
     if (!apiKey) {
       throw this._error(
         context,

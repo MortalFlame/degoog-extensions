@@ -9,7 +9,22 @@ export default class OpenAlexEngine {
   name = "OpenAlex";
   bangShortcut = "openalex";
 
-  settingsSchema = [];
+  _apiKey = "";
+  configure(settings = {}) {
+    this._apiKey = (settings.apiKey || "").trim();
+  }
+
+  settingsSchema = [
+    {
+      key: "apiKey",
+      label: "API Key",
+      type: "password",
+      secret: true,
+      placeholder: "OPENALEX_API_KEY",
+      description:
+        "Leave empty to use the OPENALEX_API_KEY environment variable.",
+    },
+  ];
 
   _error(context, type, message) {
     console.error(`[openalex] ERROR (${type}): ${message}`);
@@ -373,9 +388,10 @@ export default class OpenAlexEngine {
     if (filters.length) params.set("filter", filters.join(","));
 
     const apiKey =
-      typeof process !== "undefined" && process?.env
+      this._apiKey ||
+      (typeof process !== "undefined" && process?.env
         ? process.env.OPENALEX_API_KEY
-        : "";
+        : "");
 
     const url = `${BASE_URL}?${params.toString()}`;
     console.log(`[openalex] request=${BASE_URL}`);

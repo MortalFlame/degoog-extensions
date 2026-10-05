@@ -10,7 +10,22 @@ export default class SemanticScholarEngine {
   name = "Semantic Scholar";
   bangShortcut = "semantic-scholar";
 
-  settingsSchema = [];
+  _apiKey = "";
+  configure(settings = {}) {
+    this._apiKey = (settings.apiKey || "").trim();
+  }
+
+  settingsSchema = [
+    {
+      key: "apiKey",
+      label: "API Key",
+      type: "password",
+      secret: true,
+      placeholder: "SEMANTIC_SCHOLAR_API_KEY",
+      description:
+        "Leave empty to use the SEMANTIC_SCHOLAR_API_KEY environment variable.",
+    },
+  ];
 
   _error(context, type, message) {
     console.error(
@@ -371,9 +386,10 @@ export default class SemanticScholarEngine {
     }
 
     const apiKey =
-      typeof process !== "undefined" && process?.env
+      this._apiKey ||
+      (typeof process !== "undefined" && process?.env
         ? process.env.SEMANTIC_SCHOLAR_API_KEY
-        : "";
+        : "");
     const headers = { Accept: "application/json" };
     if (apiKey) headers["x-api-key"] = apiKey;
 

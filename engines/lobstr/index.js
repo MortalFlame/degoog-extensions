@@ -8,7 +8,33 @@ export default class LobstrEngine {
   bangShortcut = "lobstr";
 
   // No custom settings – use DeGoog's built-in timeout field instead.
-  settingsSchema = [];
+  _apiKey = "";
+  _googleSquid = "";
+  configure(settings = {}) {
+    this._apiKey = (settings.apiKey || "").trim();
+    this._googleSquid = (settings.googleSquid || "").trim();
+  }
+
+  settingsSchema = [
+    {
+      key: "apiKey",
+      label: "API Key",
+      type: "password",
+      secret: true,
+      placeholder: "LOBSTR_API_KEY",
+      description:
+        "Leave empty to use the LOBSTR_API_KEY environment variable.",
+    },
+    {
+      key: "googleSquid",
+      label: "Google Scholar Proxy",
+      type: "url",
+      secret: true,
+      placeholder: "LOBSTR_GOOGLE_SQUID",
+      description:
+        "Leave empty to use the LOBSTR_GOOGLE_SQUID environment variable.",
+    },
+  ];
 
   _error(context, status, message) {
     if (context?.engineError) {
@@ -20,7 +46,7 @@ export default class LobstrEngine {
   }
 
   async _request(url, options = {}, context) {
-    const apiKey = process.env.LOBSTR_API_KEY?.trim() || "";
+    const apiKey = (this._apiKey || process.env.LOBSTR_API_KEY?.trim() || "");
     if (!apiKey) {
       throw this._error(
         context,
@@ -83,17 +109,22 @@ export default class LobstrEngine {
    * search request's AbortSignal. This ensures cleanup even when
    * DeGoog aborts due to timeout.
    */
-  async _deleteTask(taskId, apiKey) {
+  async _deleteTask(taskId, apiKey, context) {
     const url = `${BASE_URL}/tasks/${encodeURIComponent(taskId)}`;
     const maxRetries = 2;
     let lastError;
+
+    // Route through context.fetch like every other call in this engine, so the
+    // instance's outgoing proxy and per-engine transport selection also apply to
+    // the cleanup request. Falls back to global fetch if core supplies none.
+    const doFetch = context?.fetch ?? fetch;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
       try {
-        const response = await fetch(url, {
+        const response = await doFetch(url, {
           method: "DELETE",
           headers: {
             Accept: "application/json",
@@ -169,7 +200,7 @@ export default class LobstrEngine {
   async executeSearch(query, page = 1, timeFilter, context) {
     if (page > 1) return [];
 
-    const squid = process.env.LOBSTR_GOOGLE_SQUID?.trim() || "";
+    const squid = (this._googleSquid || process.env.LOBSTR_GOOGLE_SQUID?.trim() || "");
     if (!squid) {
       throw this._error(
         context,
@@ -178,7 +209,7 @@ export default class LobstrEngine {
       );
     }
 
-    const apiKey = process.env.LOBSTR_API_KEY?.trim() || "";
+    const apiKey = (this._apiKey || process.env.LOBSTR_API_KEY?.trim() || "");
     if (!apiKey) {
       throw this._error(
         context,
@@ -271,7 +302,7 @@ export default class LobstrEngine {
       return results;
     } finally {
       if (taskId) {
-        await this._deleteTask(taskId, apiKey);
+        await this._deleteTask(taskId, apiKey, context);
       }
     }
   }

@@ -2,54 +2,55 @@
   "name": "degoog-extensions",
   "description": "Personal DeGoog extensions: scholarly and metasearch engines, plus Scrape.do, Browserless and CloakBrowser Vercel transports.",
   "author": "mortalflame",
+  "repo-image": "logo.png",
   "engines": [
     {
       "path": "engines/firecrawl",
       "name": "Firecrawl",
       "description": "Web results from the Firecrawl search API.",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "path": "engines/firecrawl-research",
       "name": "Firecrawl Research",
       "description": "Deep-research results from Firecrawl, surfaced as a papers tab.",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "path": "engines/lobstr",
       "name": "Lobstr",
       "description": "Academic literature search via Lobstr and Google Scholar.",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "path": "engines/openalex",
       "name": "OpenAlex",
       "description": "OpenAlex scholarly works with DOI, year and citation count.",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "path": "engines/semanticscholar",
       "name": "Semantic Scholar",
       "description": "Semantic Scholar paper search with citation counts and PDFs.",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "path": "engines/serpingapi",
       "name": "SerpApi",
       "description": "Google results through the SerpApi SERP endpoint.",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "path": "engines/serpstack",
       "name": "SerpStack",
       "description": "Google results through the SerpStack API.",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "path": "engines/tavily",
       "name": "Tavily",
       "description": "Web results from the Tavily search API, with adjustable search depth.",
-      "version": "1.0.0"
+      "version": "1.0.1"
     }
   ],
   "transports": [
@@ -57,19 +58,19 @@
       "path": "transports/browserless-ql-transport",
       "name": "Browserless (QL)",
       "description": "Outgoing requests through a self-hosted Browserless endpoint using stealth mode.",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "path": "transports/cloakbrowser-vercel",
       "name": "CloakBrowser Vercel",
       "description": "Fetches rendered HTML through a Vercel-hosted CloakBrowser worker. For engines that block plain requests.",
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "path": "transports/scrapedo",
       "name": "Scrape.do",
       "description": "Outgoing requests proxied through Scrape.do, with browser rendering modes.",
-      "version": "1.0.0"
+      "version": "1.0.1"
     }
   ]
 }

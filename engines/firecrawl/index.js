@@ -15,7 +15,17 @@ export default class FirecrawlEngine {
 
   safeSearch = false;
 
+  _apiKey = "";
   settingsSchema = [
+    {
+      key: "apiKey",
+      label: "API Key",
+      type: "password",
+      secret: true,
+      placeholder: "FIRECRAWL_API_KEY",
+      description:
+        "Required. Leave empty to fall back to the FIRECRAWL_API_KEY environment variable.",
+    },
     {
       key: "safeSearch",
       label: "Safe Search",
@@ -26,6 +36,7 @@ export default class FirecrawlEngine {
   ];
 
   configure(settings = {}) {
+    this._apiKey = (settings.apiKey || "").trim();
     this.safeSearch =
       settings.safeSearch === true ||
       settings.safeSearch === "true";
@@ -61,7 +72,15 @@ export default class FirecrawlEngine {
     }
 
     const apiKey =
-      process.env.FIRECRAWL_API_KEY?.trim() || "";
+      (this._apiKey || process.env.FIRECRAWL_API_KEY?.trim() || "");
+
+    if (!apiKey) {
+      throw this._error(
+        context,
+        "configuration_error",
+        "No Firecrawl API key. Set it in this engine's settings, or provide the FIRECRAWL_API_KEY environment variable.",
+      );
+    }
 
     const doFetch =
       context?.fetch ?? fetch;
@@ -100,15 +119,7 @@ export default class FirecrawlEngine {
       Accept: "application/json",
     };
 
-    /*
-     * Firecrawl currently supports keyless use.
-     * If a key is configured, use it for the
-     * authenticated/higher-limit path.
-     */
-    if (apiKey) {
-      headers.Authorization =
-        `Bearer ${apiKey}`;
-    }
+    headers.Authorization = `Bearer ${apiKey}`;
 
     let response;
 

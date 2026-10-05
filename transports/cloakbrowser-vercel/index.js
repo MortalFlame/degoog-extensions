@@ -1,7 +1,7 @@
 const VALID_WAIT_UNTIL = ["load", "domcontentloaded", "networkidle"];
 
-const WORKER_URL = process.env.CLOAKBROWSER_VERCEL_URL?.trim().replace(/\/+$/, "") || "";
-const WORKER_TOKEN = process.env.CLOAKBROWSER_VERCEL_TOKEN?.trim() || "";
+const ENV_WORKER_URL = process.env.CLOAKBROWSER_VERCEL_URL?.trim().replace(/\/+$/, "") || "";
+const ENV_WORKER_TOKEN = process.env.CLOAKBROWSER_VERCEL_TOKEN?.trim() || "";
 const BYPASS_SECRET = process.env.VERCEL_BYPASS_SECRET?.trim() || "";
 
 export default class CloakBrowserVercelTransport {
@@ -11,14 +11,27 @@ export default class CloakBrowserVercelTransport {
   description =
     "Fetches pages through a Vercel-hosted CloakBrowser worker. Configure CLOAKBROWSER_VERCEL_URL and CLOAKBROWSER_VERCEL_TOKEN in environment variables.";
 
+  _workerToken = "";
+  _workerUrl = "";
+
   settingsSchema = [
     {
-      key: "bypassProxy",
-      label: "Bypass DeGoog proxy",
-      type: "toggle",
-      default: "true",
+      key: "workerToken",
+      label: "Worker Token",
+      type: "password",
+      secret: true,
+      placeholder: "CLOAKBROWSER_VERCEL_TOKEN",
       description:
-        "Connect directly to the Vercel worker using the global fetch, bypassing any DeGoog outgoing proxy. Enable this if your firewall rules are IP-based and you don't want the proxy IP to be used.",
+        "Leave empty to use the CLOAKBROWSER_VERCEL_TOKEN environment variable.",
+    },
+    {
+      key: "workerUrl",
+      label: "Worker URL",
+      type: "url",
+      secret: true,
+      placeholder: "CLOAKBROWSER_VERCEL_URL",
+      description:
+        "Leave empty to use the CLOAKBROWSER_VERCEL_URL environment variable.",
     },
     {
       key: "waitUntil",
@@ -45,13 +58,13 @@ export default class CloakBrowserVercelTransport {
     },
   ];
 
-  _bypassProxy = true;
   _waitUntil = "domcontentloaded";
   _timeoutMs = 30000;
   _extraWaitMs = 1500;
 
   configure(settings = {}) {
-    this._bypassProxy = settings.bypassProxy !== "false";
+    this._workerToken = (settings.workerToken || "").trim();
+    this._workerUrl = (settings.workerUrl || "").trim().replace(/\/+$/, "");
     this._waitUntil = VALID_WAIT_UNTIL.includes(settings.waitUntil)
       ? settings.waitUntil
       : "domcontentloaded";
@@ -60,24 +73,33 @@ export default class CloakBrowserVercelTransport {
   }
 
   available() {
-    return WORKER_URL.length > 0 && WORKER_TOKEN.length > 0;
+    const workerUrl = this._workerUrl || ENV_WORKER_URL;
+    const workerToken = this._workerToken || ENV_WORKER_TOKEN;
+
+    return workerUrl.length > 0 && workerToken.length > 0;
   }
 
   async fetch(url, options, context) {
-    if (!WORKER_URL || !WORKER_TOKEN) {
+    const workerUrl = this._workerUrl || ENV_WORKER_URL;
+    const workerToken = this._workerToken || ENV_WORKER_TOKEN;
+
+    if (!workerUrl || !workerToken) {
       return new Response("CloakBrowser Vercel transport not configured", { status: 503 });
     }
 
-    // Bypass DeGoog proxy if enabled – use global fetch directly
-    const doFetch = this._bypassProxy ? fetch : (context?.fetch ?? fetch);
+    // Always go through context.fetch so the instance's outgoing proxy settings
+    // apply. With no proxy configured this is an ordinary fetch, so removing the
+    // old bypassProxy toggle costs nothing and stops this transport silently
+    // ignoring proxy configuration.
+    const doFetch = context?.fetch ?? fetch;
 
     let response;
     try {
-      response = await doFetch(WORKER_URL, {
+      response = await doFetch(workerUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-browser-token": WORKER_TOKEN,
+          "x-browser-token": workerToken,
           ...(BYPASS_SECRET ? { "x-vercel-protection-bypass": BYPASS_SECRET } : {}),
         },
         body: JSON.stringify({
