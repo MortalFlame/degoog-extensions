@@ -11,6 +11,22 @@ export default class CloakBrowserVercelTransport {
   description =
     "Fetches pages through a Vercel-hosted CloakBrowser worker. Configure CLOAKBROWSER_VERCEL_URL and CLOAKBROWSER_VERCEL_TOKEN in environment variables.";
 
+  // Tells DeGoog core that this transport clears JS challenges itself, so core
+  // must NOT wrap requests in its own Anubis proof-of-work solver.
+  //
+  // Core's gate (src/server/search/engine-context.ts) is:
+  //   challenges includes "anubis" AND transport.handlesChallenges !== true
+  // so leaving this unset makes core solve the challenge itself and then
+  // re-navigate the browser to pass it and to retry -- up to three browser
+  // navigations, because this worker builds a fresh context per request and so
+  // cannot carry the solved cookie between them. Core even detects that case
+  // and logs "the transport is probably dropping its cookies".
+  //
+  // The worker renders pages in a real browser, so Anubis's JS challenge runs
+  // and self-solves there. That is strictly better than core solving the PoW
+  // over plain HTTP, which also avoids losing the browser's TLS fingerprint.
+  handlesChallenges = true;
+
   _workerToken = "";
   _workerUrl = "";
 

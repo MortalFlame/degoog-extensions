@@ -111,15 +111,23 @@ export default class LobstrEngine {
    */
   async _deleteTask(taskId, apiKey, context) {
     const url = `${BASE_URL}/tasks/${encodeURIComponent(taskId)}`;
-    const maxRetries = 2;
+
+    // Lobstr refuses to delete a task while its run is still in progress, and
+    // reports that as HTTP 400 with code "RunInProgress". That is a *wait* signal,
+    // not a failure: _waitForRun returns the moment the run reports "done", but
+    // Lobstr keeps finalising the task for a short while afterwards. So back off
+    // patiently instead of failing in two seconds and orphaning the task.
+    const maxAttempts = 6;
+    const backoffMs = [1000, 2000, 4000, 8000, 10000, 10000];
     let lastError;
+    let runInProgress = false;
 
     // Route through context.fetch like every other call in this engine, so the
     // instance's outgoing proxy and per-engine transport selection also apply to
     // the cleanup request. Falls back to global fetch if core supplies none.
     const doFetch = context?.fetch ?? fetch;
 
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -137,6 +145,8 @@ export default class LobstrEngine {
 
         if (!response.ok) {
           const text = await response.text();
+          runInProgress =
+            response.status === 400 && text.includes("RunInProgress");
           throw new Error(`HTTP ${response.status}: ${text.slice(0, 200)}`);
         }
 
@@ -146,18 +156,28 @@ export default class LobstrEngine {
         clearTimeout(timeoutId);
         lastError = error;
         console.warn(
-          `[lobstr] delete attempt ${attempt + 1} failed for task ${taskId}:`,
+          `[lobstr] delete attempt ${attempt + 1}/${maxAttempts} failed for task ${taskId}:`,
           error instanceof Error ? error.message : String(error),
         );
 
-        if (attempt < maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (attempt < maxAttempts - 1) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, backoffMs[Math.min(attempt, backoffMs.length - 1)]),
+          );
         }
       }
     }
 
-    console.error(
-      `[lobstr] CRITICAL: failed to delete task ${taskId} after ${maxRetries + 1} attempts. Manual cleanup may be required.`,
+    // Cleanup only. The search itself already returned its results, so this must
+    // not be reported as a functional failure -- it never was one.
+    const reason = runInProgress
+      ? "Lobstr was still finalising the run; it may be removed from the Lobstr UI"
+      : "the task may need removing from the Lobstr UI";
+    console.warn(
+      `[lobstr] task ${taskId} not deleted after ${maxAttempts} attempts (${reason}). ` +
+        `Search results were unaffected. Last error: ${
+          lastError instanceof Error ? lastError.message : String(lastError)
+        }`,
     );
   }
 

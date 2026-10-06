@@ -20,7 +20,7 @@
       "path": "engines/lobstr",
       "name": "Lobstr",
       "description": "Academic literature search via Lobstr and Google Scholar.",
-      "version": "1.0.1"
+      "version": "1.0.2"
     },
     {
       "path": "engines/openalex",
@@ -64,7 +64,7 @@
       "path": "transports/cloakbrowser-vercel",
       "name": "CloakBrowser Vercel",
       "description": "Fetches rendered HTML through a Vercel-hosted CloakBrowser worker. For engines that block plain requests.",
-      "version": "1.0.1"
+      "version": "1.0.2"
     },
     {
       "path": "transports/scrapedo",
