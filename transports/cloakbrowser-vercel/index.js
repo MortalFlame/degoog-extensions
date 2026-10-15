@@ -85,7 +85,7 @@ export default class CloakBrowserVercelTransport {
       ? settings.waitUntil
       : "domcontentloaded";
     this._timeoutMs = Math.max(3000, Math.min(60000, Number(settings.timeout) || 30000));
-    this._extraWaitMs = Math.max(0, Math.min(15000, Number(settings.extraWaitMs) || 1500));
+    this._extraWaitMs = Math.max(0, Math.min(20000, Number(settings.extraWaitMs) || 1500));
   }
 
   available() {
